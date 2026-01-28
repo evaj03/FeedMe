@@ -94,11 +94,11 @@
 ```mermaid
 flowchart TD
     A[User Browser]
-    B[React Frontend (AWS Amplify/S3 + CloudFront)]
-    C[Spring Boot REST API (AWS Elastic Beanstalk/ECS)]
-    D[AWS RDS (Database)]
-    E[AWS S3 (Image/File Storage)]
-    F[AWS SES (Email Service)]
+    B[React Frontend &lpar;AWS Amplify/S3 + CloudFront&rpar;]
+    C[Spring Boot REST API &lpar;AWS Elastic Beanstalk/ECS&rpar;]
+    D[AWS RDS &lpar;Database&rpar;]
+    E[AWS S3 &lpar;Image/File Storage&rpar;]
+    F[AWS SES &lpar;Email Service&rpar;]
 
     A --> B
     B --> C
