@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface RecipeService {
     List<RecipeResponse> getAllRecipes();
 
+    RecipeResponse getRecipeById(UUID id);
+
     RecipeResponse createRecipe(RecipeRequest request);
 
     RecipeResponse updateRecipe(UUID id, RecipeRequest request);
@@ -18,4 +20,3 @@ public interface RecipeService {
 
     ShareRecipeResponse shareRecipe(UUID id);
 }
-

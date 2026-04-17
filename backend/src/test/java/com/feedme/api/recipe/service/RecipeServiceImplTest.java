@@ -3,6 +3,7 @@ package com.feedme.api.recipe.service;
 import com.feedme.api.recipe.model.Recipe;
 import com.feedme.api.recipe.model.RecipeRequest;
 import com.feedme.api.recipe.model.RecipeResponse;
+import com.feedme.api.recipe.model.Visibility;
 import com.feedme.api.recipe.repository.RecipeRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,21 +35,37 @@ class RecipeServiceImplTest {
 
     @Test
     void createRecipeUsesDefaultVisibilityWhenMissing() {
-        when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(recipeRepository.save(any(Recipe.class))).thenAnswer(inv -> inv.getArgument(0));
 
         RecipeRequest request = new RecipeRequest(
-                "Tomato Pasta",
-                List.of("Tomatoes", "Pasta"),
-                "Boil pasta and mix with sauce",
-                Map.of("calories", 450),
-                List.of("vegetarian"),
-                null
+                "Tomato Pasta", List.of("Tomatoes", "Pasta"),
+                "Boil pasta and mix with sauce", Map.of("calories", 450),
+                List.of("vegetarian"), null
         );
 
         RecipeResponse response = recipeService.createRecipe(request);
 
-        assertEquals("public", response.visibility());
+        assertEquals(Visibility.PUBLIC, response.visibility());
         assertEquals("Tomato Pasta", response.title());
+    }
+
+    @Test
+    void getRecipeByIdReturnsResponseWhenFound() {
+        UUID id = UUID.randomUUID();
+        when(recipeRepository.findById(id)).thenReturn(Optional.of(sampleRecipe(id)));
+
+        RecipeResponse response = recipeService.getRecipeById(id);
+
+        assertEquals(id, response.id());
+        assertEquals("Tomato Pasta", response.title());
+    }
+
+    @Test
+    void getRecipeByIdThrowsWhenNotFound() {
+        UUID id = UUID.randomUUID();
+        when(recipeRepository.findById(id)).thenReturn(Optional.empty());
+
+        assertThrows(RecipeNotFoundException.class, () -> recipeService.getRecipeById(id));
     }
 
     @Test
@@ -57,12 +74,8 @@ class RecipeServiceImplTest {
         when(recipeRepository.findById(id)).thenReturn(Optional.empty());
 
         RecipeRequest request = new RecipeRequest(
-                "Tomato Pasta",
-                List.of("Tomatoes", "Pasta"),
-                "Boil pasta and mix with sauce",
-                Map.of(),
-                List.of(),
-                "public"
+                "Tomato Pasta", List.of("Tomatoes", "Pasta"),
+                "Boil pasta", Map.of(), List.of(), Visibility.PUBLIC
         );
 
         assertThrows(RecipeNotFoundException.class, () -> recipeService.updateRecipe(id, request));
@@ -77,11 +90,12 @@ class RecipeServiceImplTest {
     }
 
     @Test
-    void shareRecipeReturnsPublicLink() {
+    void shareRecipeReturnsConfigurablePublicLink() {
         UUID id = UUID.randomUUID();
         when(recipeRepository.findById(id)).thenReturn(Optional.of(sampleRecipe(id)));
 
-        String publicUrl = recipeService.shareRecipe(id).publicUrl();
+        RecipeServiceImpl service = new RecipeServiceImpl(recipeRepository, "https://share.feedme.local");
+        String publicUrl = service.shareRecipe(id).publicUrl();
 
         assertEquals("https://share.feedme.local/recipes/" + id, publicUrl);
     }
@@ -91,29 +105,10 @@ class RecipeServiceImplTest {
         UUID olderId = UUID.randomUUID();
         UUID newerId = UUID.randomUUID();
 
-        Recipe older = new Recipe(
-                olderId,
-                "Older",
-                List.of("A"),
-                "Steps",
-                Map.of(),
-                List.of(),
-                "public",
-                Instant.parse("2026-04-16T00:00:00Z"),
-                Instant.parse("2026-04-16T00:00:00Z")
-        );
-
-        Recipe newer = new Recipe(
-                newerId,
-                "Newer",
-                List.of("B"),
-                "Steps",
-                Map.of(),
-                List.of(),
-                "public",
-                Instant.parse("2026-04-17T00:00:00Z"),
-                Instant.parse("2026-04-17T00:00:00Z")
-        );
+        Recipe older = new Recipe(olderId, "Older", List.of("A"), "Steps", Map.of(), List.of(),
+                Visibility.PUBLIC, Instant.parse("2026-04-16T00:00:00Z"), Instant.parse("2026-04-16T00:00:00Z"));
+        Recipe newer = new Recipe(newerId, "Newer", List.of("B"), "Steps", Map.of(), List.of(),
+                Visibility.PUBLIC, Instant.parse("2026-04-17T00:00:00Z"), Instant.parse("2026-04-17T00:00:00Z"));
 
         when(recipeRepository.findAll()).thenReturn(List.of(newer, older));
 
@@ -126,17 +121,13 @@ class RecipeServiceImplTest {
     @Test
     void updateRecipePersistsChanges() {
         UUID id = UUID.randomUUID();
-        Recipe existing = sampleRecipe(id);
-        when(recipeRepository.findById(id)).thenReturn(Optional.of(existing));
-        when(recipeRepository.save(any(Recipe.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(recipeRepository.findById(id)).thenReturn(Optional.of(sampleRecipe(id)));
+        when(recipeRepository.save(any(Recipe.class))).thenAnswer(inv -> inv.getArgument(0));
 
         RecipeRequest request = new RecipeRequest(
-                "Updated Pasta",
-                List.of("Tomatoes", "Pasta", "Basil"),
-                "Cook and garnish",
-                Map.of("calories", 500),
-                List.of("vegetarian"),
-                "private"
+                "Updated Pasta", List.of("Tomatoes", "Pasta", "Basil"),
+                "Cook and garnish", Map.of("calories", 500),
+                List.of("vegetarian"), Visibility.PRIVATE
         );
 
         recipeService.updateRecipe(id, request);
@@ -144,21 +135,13 @@ class RecipeServiceImplTest {
         ArgumentCaptor<Recipe> captor = ArgumentCaptor.forClass(Recipe.class);
         verify(recipeRepository).save(captor.capture());
         assertEquals("Updated Pasta", captor.getValue().title());
-        assertEquals("private", captor.getValue().visibility());
+        assertEquals(Visibility.PRIVATE, captor.getValue().visibility());
     }
 
     private Recipe sampleRecipe(UUID id) {
-        return new Recipe(
-                id,
-                "Tomato Pasta",
-                List.of("Tomatoes", "Pasta"),
-                "Boil pasta and mix with sauce",
-                Map.of("calories", 450),
-                List.of("vegetarian"),
-                "public",
-                Instant.parse("2026-04-17T00:00:00Z"),
-                Instant.parse("2026-04-17T00:00:00Z")
-        );
+        return new Recipe(id, "Tomato Pasta", List.of("Tomatoes", "Pasta"),
+                "Boil pasta and mix with sauce", Map.of("calories", 450),
+                List.of("vegetarian"), Visibility.PUBLIC,
+                Instant.parse("2026-04-17T00:00:00Z"), Instant.parse("2026-04-17T00:00:00Z"));
     }
 }
-

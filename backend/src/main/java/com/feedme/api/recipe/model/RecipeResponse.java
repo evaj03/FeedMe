@@ -12,7 +12,7 @@ public record RecipeResponse(
         String steps,
         Map<String, Object> nutritionInfo,
         List<String> tags,
-        String visibility,
+        Visibility visibility,
         Instant createdAt,
         Instant updatedAt
 ) {
