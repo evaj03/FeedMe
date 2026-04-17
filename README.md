@@ -20,6 +20,10 @@ FeedMe is a free-to-use web application for managing recipes, creating meal plan
 - **File/Image Storage:** AWS S3
 - **Other AWS Services:** CloudFront (CDN), SES (email), IAM (access control)
 
+## Repository Layout
+- `backend`: Spring Boot service built with Gradle
+- `frontend`: JavaScript frontend module with npm scripts orchestrated by Gradle
+
 ## Architecture
 ```mermaid
 flowchart TD
@@ -50,27 +54,26 @@ See [DB-SCHEMA.md](./DB-SCHEMA.md) for a detailed, normalized schema supporting 
    git clone <your-repo-url>
    cd FeedMe
    ```
-2. **Install frontend dependencies:**
+2. **Prerequisites:**
+   - Java 25+
+   - Node.js 20+ and npm
+3. **Run backend (Spring Boot):**
    ```bash
-   cd frontend
-   npm install
-   npm start
+   ./gradlew :backend:bootRun
    ```
-3. **Setup backend:**
-   - Ensure Java 17+ and PostgreSQL are installed
-   - Configure environment variables for AWS and database access
-   - Build and run Spring Boot app:
-     ```bash
-     cd backend
-     ./mvnw spring-boot:run
-     ```
-4. **Database migration:**
-   - Use provided schema in [DB-SCHEMA.md](./DB-SCHEMA.md) to create tables
-   - Optionally use Flyway or Liquibase for migrations
+4. **Run frontend (basic module runner):**
+   ```bash
+   npm --prefix frontend start
+   ```
+5. **Build all modules:**
+   ```bash
+   ./gradlew build
+   ```
 
 ## Testing
-- Frontend: `npm test` (Jest, React Testing Library)
-- Backend: `./mvnw test` (JUnit, Mockito)
+- All modules via Gradle: `./gradlew test`
+- Backend only: `./gradlew :backend:test`
+- Frontend only: `./gradlew :frontend:npmTest`
 
 ## Contribution
 - Follow the standards in [RULESET.md](./RULESET.md)
@@ -82,4 +85,3 @@ This project is free to use and open source. See LICENSE for details.
 
 ## Contact
 For questions or support, open an issue or contact the maintainer.
-

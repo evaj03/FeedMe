@@ -1,0 +1,32 @@
+plugins {
+    id 'base'
+}
+
+def isWindows = System.getProperty('os.name').toLowerCase().contains('windows')
+def npmExecutable = isWindows ? 'npm.cmd' : 'npm'
+
+tasks.register('npmInstall', Exec) {
+    workingDir = projectDir
+    commandLine npmExecutable, 'install'
+}
+
+tasks.register('npmBuild', Exec) {
+    dependsOn 'npmInstall'
+    workingDir = projectDir
+    commandLine npmExecutable, 'run', 'build'
+}
+
+tasks.register('npmTest', Exec) {
+    dependsOn 'npmInstall'
+    workingDir = projectDir
+    commandLine npmExecutable, 'run', 'test'
+}
+
+tasks.named('build') {
+    dependsOn 'npmBuild'
+}
+
+tasks.named('check') {
+    dependsOn 'npmTest'
+}
+
